@@ -31,9 +31,19 @@ fn join_segments_to_path(segments: &Vec<String>) -> String {
   segments.join(":")
 }
 
+fn homebrew(path: &mut Vec<String>) {
+  path.retain(|s| s != "/usr/local/sbin" && s != "/usr/local/bin");
+  path.insert(0, String::from("/usr/local/sbin"));
+  path.insert(0, String::from("/usr/local/bin"));
+}
+
 fn main() {
+  let args: Vec<String> = env::args().collect();
   let mut segments = get_path_segments();
-  let sorted = sort_by_path_segment_length(&mut segments);
+  let mut sorted = sort_by_path_segment_length(&mut segments);
+  if args.len() > 1 && args[1] == "--homebrew" {
+    homebrew(&mut sorted);
+  }
   let path = join_segments_to_path(&sorted);
   println!("{}", path);
 }
