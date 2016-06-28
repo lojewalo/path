@@ -1,0 +1,6 @@
+[package]
+name = "path_sort"
+version = "0.1.0"
+authors = ["Kyle Clemens <jkc.clemens@gmail.com>"]
+
+[dependencies]
