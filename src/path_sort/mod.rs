@@ -49,7 +49,12 @@ impl<'a> OsPathHandler<'a> {
     }
     if let Some(must_be_unique) = sort_file.rules.must_be_unique {
       if must_be_unique {
-        paths = paths.into_iter().fold(Vec::new(), |mut v, p| { if !v.contains(&p) { v.push(p) }; v });
+        paths = paths.into_iter().fold(Vec::new(), |mut v, p| {
+          if !v.contains(&p) {
+            v.push(p)
+          };
+          v
+        });
         // let set: HashSet<String> = paths.into_iter().collect();
         // paths = set.into_iter().collect();
       }
@@ -62,7 +67,7 @@ impl<'a> OsPathHandler<'a> {
 
   pub fn get_path() -> Result<Vec<String>> {
     let path_var = try!(env::var("PATH"));
-    Ok(path_var.split(":").map(|o| o.to_owned()).collect())
+    Ok(path_var.split(':').map(|o| o.to_owned()).collect())
   }
 
   pub fn create_full_path(&self) -> Option<FullPath> {
@@ -70,8 +75,8 @@ impl<'a> OsPathHandler<'a> {
     if let Some(ref order) = self.sort_file.rules.order {
       if let Some(ref paths) = order.paths {
         let mut processed_paths: Vec<PathElements> = paths.iter()
-          .flat_map(|x| match x {
-            &Path::Exact(ref p) => {
+          .flat_map(|x| match *x {
+            Path::Exact(ref p) => {
               if let Some(pos) = sys_paths.iter().position(|x| x == p) {
                 sys_paths.remove(pos);
                 Some(PathElements { elements: vec![p.clone()] })
@@ -79,8 +84,8 @@ impl<'a> OsPathHandler<'a> {
                 None
               }
             }
-            &Path::Contains(ref p) => {
-              let matches: Vec<_> = sys_paths.iter().filter(|x| x.contains(p)).map(|x| x.clone()).collect();
+            Path::Contains(ref p) => {
+              let matches: Vec<_> = sys_paths.iter().filter(|x| x.contains(p)).cloned().collect();
               {
                 let str_matches: Vec<_> = matches.iter().collect();
                 sys_paths.retain(|x| !str_matches.contains(&x));
@@ -91,7 +96,7 @@ impl<'a> OsPathHandler<'a> {
                 Some(PathElements { elements: matches })
               }
             }
-            &Path::Default(x) => {
+            Path::Default(x) => {
               if !x {
                 return None;
               }
@@ -102,7 +107,7 @@ impl<'a> OsPathHandler<'a> {
         {
           let def = processed_paths.iter_mut()
             .map(|e| &mut e.elements)
-            .filter(|e| e.len() == 1 && e[0] == "\0default\0".to_string())
+            .filter(|e| e.len() == 1 && e[0] == "\0default\0")
             .take(1)
             .next();
           if let Some(mut x) = def {
@@ -177,7 +182,7 @@ impl PathElements {
       for path in &self.elements {
         // Get the number of segments in the path
         let len = OsPath::new(&path).components().collect::<Vec<_>>().len();
-        let entries = length_map.entry(len).or_insert(Vec::new());
+        let entries = length_map.entry(len).or_insert_with(Vec::new);
         // Append this path to the list of paths with this length
         entries.push(path.to_owned());
       }
@@ -191,7 +196,7 @@ impl PathElements {
         length_map.into_iter().rev().collect()
       };
       // Iterate over whatever we have
-      for &mut (_, ref mut entries) in iter.iter_mut() {
+      for &mut (_, ref mut entries) in &mut iter {
         // Sort the paths alphabetically for each length group if necessary
         if sort_alpha != 0 {
           entries.sort();
@@ -217,7 +222,7 @@ impl PathSort {
     PathSort {}
   }
 
-  pub fn get_sort_file<'a>(&self, path: Option<&'a str>) -> Result<SortFile> {
+  pub fn get_sort_file(&self, path: Option<&str>) -> Result<SortFile> {
     if let Some(path) = path {
       let os_path = OsPath::new(path);
       if !os_path.exists() || !os_path.is_file() {

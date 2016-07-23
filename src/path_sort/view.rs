@@ -42,7 +42,7 @@ impl View {
       Standalone(bytes) => {
         format!("{} byte{}",
                 bytes,
-                if bytes == 1f64 {
+                if bytes as usize == 1 {
                   ""
                 } else {
                   "s"
@@ -50,7 +50,10 @@ impl View {
       }
       Prefixed(prefix, n) => format!("{:.2} {}B", n, prefix),
     };
-    return Ok(format!("{} file{}\n  {}", num_files.separated_string(), file_plural, formatted_bytes));
+    Ok(format!("{} file{}\n  {}",
+               num_files.separated_string(),
+               file_plural,
+               formatted_bytes))
   }
 
   pub fn print_view(&self) {
