@@ -1,0 +1,21 @@
+{
+  "rules": {
+    "order": {
+      "paths": [
+        {"exact": "/usr/local/bin"},
+        {"exact": "/usr/local/sbin"},
+        {"contains": ".rvm"},
+        {"default": true},
+        {"exact": "/bin"},
+        {"exact": "/sbin"}
+      ],
+      "sort": {
+        "alphabetical": 1,
+        "path_component_length": -1
+      }
+    },
+    "must_exist": true,
+    "must_be_unique": true,
+    "must_be_absolute": true
+  }
+}

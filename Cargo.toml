@@ -1,6 +1,13 @@
 [package]
-name = "path_sort"
-version = "0.1.0"
+name = "path"
+version = "0.2.0"
 authors = ["Kyle Clemens <jkc.clemens@gmail.com>"]
 
 [dependencies]
+clap = "2.9"
+serde = "0.7"
+serde_json = "0.7"
+serde_macros = "0.7"
+error-chain = "0.2"
+number_prefix = "0.2"
+separator = "0.3"
