@@ -1,7 +1,8 @@
-#![feature(custom_derive, plugin)]
-#![plugin(serde_macros)]
+#![feature(proc_macro)]
 
 extern crate clap;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 #[macro_use]
 extern crate error_chain;
