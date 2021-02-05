@@ -1,12 +1,9 @@
-#[macro_use]
-mod macros;
-mod error;
 mod representation;
 pub mod view;
 
-use path_sort::error::*;
-use path_sort::representation::{Path, SortFile};
-use serde_json;
+use anyhow::Context;
+use crate::Result;
+use crate::path_sort::representation::{Path, SortFile};
 use std::collections::BTreeMap;
 use std::fs::File;
 use std::io::Read;
@@ -36,7 +33,7 @@ pub struct OsPathHandler<'a> {
 
 impl<'a> OsPathHandler<'a> {
   pub fn new(sort_file: &'a SortFile) -> Result<Self> {
-    let mut paths: Vec<String> = try!(OsPathHandler::get_path());
+    let mut paths: Vec<String> = OsPathHandler::get_path()?;
     if let Some(must_exist) = sort_file.rules.must_exist {
       if must_exist {
         paths.retain(|p| OsPath::new(&p).exists());
@@ -66,7 +63,7 @@ impl<'a> OsPathHandler<'a> {
   }
 
   pub fn get_path() -> Result<Vec<String>> {
-    let path_var = try!(env::var("PATH"));
+    let path_var = env::var("PATH")?;
     Ok(path_var.split(':').map(|o| o.to_owned()).collect())
   }
 
@@ -110,7 +107,7 @@ impl<'a> OsPathHandler<'a> {
             .filter(|e| e.len() == 1 && e[0] == "\0default\0")
             .take(1)
             .next();
-          if let Some(mut x) = def {
+          if let Some(x) = def {
             x.clear();
             x.append(&mut sys_paths);
           }
@@ -226,19 +223,17 @@ impl PathSort {
     if let Some(path) = path {
       let os_path = OsPath::new(path);
       if !os_path.exists() || !os_path.is_file() {
-        return Err(format!("{} does not exist or is not a file", path).into());
+        anyhow::bail!("{} does not exist or is not a file", path);
       }
       let mut file = match File::open(os_path) {
         Ok(x) => x,
-        Err(e) => return Err(format!("error opening {}: {}", path, e).into()),
+        Err(e) => anyhow::bail!("error opening {}: {}", path, e),
       };
       let mut sort_file_str = String::new();
-      if let Err(e) = file.read_to_string(&mut sort_file_str) {
-        return Err(format!("error reading {}: {}", path, e).into());
-      }
-      serde_json::from_str(&sort_file_str).chain_err(|| format!("error creating rules from {}", path))
+      file.read_to_string(&mut sort_file_str).with_context(|| format!("error reading {}", path))?;
+      serde_json::from_str(&sort_file_str).with_context(|| format!("error creating rules from {}", path))
     } else {
-      serde_json::from_str(DEFAULT_RULES).chain_err(|| "error creating default rules")
+      serde_json::from_str(DEFAULT_RULES).context("error creating default rules")
     }
   }
 }

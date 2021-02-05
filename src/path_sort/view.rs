@@ -1,6 +1,6 @@
-use path_sort::error::*;
-use number_prefix::{Prefixed, Standalone, binary_prefix};
-use path_sort::OsPathHandler;
+use crate::Result;
+use crate::path_sort::OsPathHandler;
+use number_prefix::NumberPrefix;
 use separator::Separatable;
 use std::path::Path as OsPath;
 
@@ -15,21 +15,17 @@ impl View {
     for path in paths {
       match self.get_single_view(path) {
         Ok(x) => println!("{}\n  {}", path, x),
-        Err(e) => {
-          println!("{}\n  {}",
-                   path,
-                   e.iter().map(|e| e.to_string()).collect::<Vec<_>>().join("\n  "))
-        }
+        Err(e) => println!("{}\n  {:?}", path, e),
       }
     }
   }
 
   pub fn get_single_view(&self, path: &str) -> Result<String> {
-    let dir = try!(OsPath::new(path).read_dir());
+    let dir = OsPath::new(path).read_dir()?;
     let (mut num_files, mut size_bytes) = (0, 0);
     for path in dir {
-      let path = try!(path);
-      let metadata = try!(path.metadata());
+      let path = path?;
+      let metadata = path.metadata()?;
       size_bytes += metadata.len();
       num_files += 1;
     }
@@ -38,8 +34,8 @@ impl View {
     } else {
       "s"
     };
-    let formatted_bytes = match binary_prefix(size_bytes as f64) {
-      Standalone(bytes) => {
+    let formatted_bytes = match NumberPrefix::decimal(size_bytes as f64) {
+      NumberPrefix::Standalone(bytes) => {
         format!("{} byte{}",
                 bytes,
                 if bytes as usize == 1 {
@@ -48,7 +44,7 @@ impl View {
                   "s"
                 })
       }
-      Prefixed(prefix, n) => format!("{:.2} {}B", n, prefix),
+      NumberPrefix::Prefixed(prefix, n) => format!("{:.2} {}B", n, prefix),
     };
     Ok(format!("{} file{}\n  {}",
                num_files.separated_string(),

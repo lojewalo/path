@@ -1,23 +1,12 @@
-#![feature(proc_macro)]
-
-extern crate clap;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-#[macro_use]
-extern crate error_chain;
-extern crate number_prefix;
-extern crate separator;
-
-#[macro_use]
 mod path_sort;
 
 use clap::{App, AppSettings, Arg, SubCommand};
-use std::io::Write;
 
-fn inner() -> i32 {
+pub type Result<T> = std::result::Result<T, anyhow::Error>;
+
+fn main() -> Result<()> {
   let res = App::new("path_sort")
-    .version("0.2.0")
+    .version("1.0.0")
     .about("Manages the PATH variable")
     .setting(AppSettings::SubcommandRequired)
     .subcommand(SubCommand::with_name("sort")
@@ -33,29 +22,19 @@ fn inner() -> i32 {
     .get_matches();
   match res.subcommand() {
     ("sort", Some(s)) => {
-      let path_sort = path_sort::PathSort::new();
-      let sort_file = try_or_err_code!(path_sort.get_sort_file(s.value_of("sort_file")));
-      let handler = path_sort::OsPathHandler::new(&sort_file).unwrap();
-      let mut full_path = match handler.create_full_path() {
-        Some(f) => f,
-        None => return 1,
-      };
+      let path_sort = crate::path_sort::PathSort::new();
+      let sort_file = path_sort.get_sort_file(s.value_of("sort_file"))?;
+      let handler = crate::path_sort::OsPathHandler::new(&sort_file)?;
+      let mut full_path = handler.create_full_path().ok_or_else(|| anyhow::anyhow!("could not create full path"))?;
       full_path.sort(&sort_file);
       println!("{}", full_path.to_string());
-      0
-    }
+    },
     ("view", Some(_)) => {
-      let view = path_sort::view::View::new();
+      let view = crate::path_sort::view::View::new();
       view.print_view();
-      0
-    }
-    _ => {
-      unreachable!();
-    }
+    },
+    _ => unreachable!(),
   }
-}
 
-fn main() {
-  let exit_code = inner();
-  std::process::exit(exit_code);
+  Ok(())
 }

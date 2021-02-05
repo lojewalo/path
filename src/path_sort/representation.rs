@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SortFile {
   pub rules: Rules
